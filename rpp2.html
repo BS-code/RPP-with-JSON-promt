@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Penyusunan RPS AI - Universitas Dharma Wacana (Prompt JSON)</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #003366;
+            --primary-dark: #002244;
+            --secondary-color: #f4f7f6;
+            --accent-color: #d4af37;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --bg-color: #f0f2f5;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        nav h1 { margin: 0; font-size: 1.5rem; }
+        
+        .nav-links button {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            margin-left: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .nav-links button:hover, .nav-links button.active {
+            background: rgba(255,255,255,0.2);
+            border-color: white;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .view-section {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view-section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Forms */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; }
+        input[type="text"], input[type="password"], input[type="number"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: 'Courier New', Courier, monospace; /* For JSON code */
+        }
+        textarea { resize: vertical; min-height: 80px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+        h2 { border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; color: var(--primary-color); margin-top: 0; }
+        h3 { color: var(--primary-color); margin-top: 20px; font-size: 1.1rem; border-left: 4px solid var(--accent-color); padding-left: 10px; }
+
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+        
+        .btn-ai {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .btn-ai:disabled { background-color: #ccc; cursor: not-allowed; }
+        .btn-ai:hover:not(:disabled) { background-color: var(--primary-dark); }
+
+        /* Tables */
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; vertical-align: top; font-size: 0.9rem; }
+        th { background-color: var(--secondary-color); font-weight: 700; text-align: center; }
+        
+        /* Matrix Checkbox */
+        .matrix-cell { text-align: center; }
+        .matrix-cell input { transform: scale(1.5); cursor: pointer; }
+
+        /* Action Bar */
+        .action-bar {
+            position: sticky;
+            bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-outline { background-color: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
+        .btn-danger { background-color: var(--error-color); color: white; }
+        
+        /* Preview Styles */
+        #preview-content {
+            background: white;
+            padding: 40px;
+            border: 1px solid #ccc;
+        }
+        
+        .signature-box {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        .sign-col { text-align: center; width: 23%; }
+        .sign-space { height: 80px; }
+
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* STYLES TIRUAN SCRIPT RPP */
+        .key-note {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 1.5rem;
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            padding: 0.75rem;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+            align-items: start;
+        }
+
+        .key-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom:1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .key-item { display: flex; gap: 8px; }
+        .key-item input { flex: 1; }
+
+        .btn-remove-key {
+            background: #fee2e2;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+            width: 40px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-remove-key:hover { background: #fecaca; }
+
+        .btn-add {
+            width: 100%;
+            border: 1px dashed var(--primary-color);
+            color: var(--primary-color);
+            background: #f0f9ff;
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .btn-add:hover { background: #e0f2fe; }
+
+        .btn-test {
+            background: white;
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+        .btn-test:hover { background: #f8f9fa; }
+
+        .btn-save {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .btn-save:hover { background-color: var(--primary-dark); }
+
+        /* Toast */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: white;
+            color: #333;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary-color);
+            animation: slideIn 0.3s ease-out forwards;
+            min-width: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+        .toast.error { border-left-color: var(--error-color); }
+        .toast.success { border-left-color: var(--success-color); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div>
+            <i class="fas fa-university"></i> UDW <strong>RPS BUILDER (JSON Prompt)</strong>
+        </div>
+        <div class="nav-links">
+            <button onclick="app.switchView('settings')" id="nav-settings"><i class="fas fa-cog"></i> Pengaturan API</button>
+            <button onclick="app.switchView('prompt')" id="nav-prompt"><i class="fas fa-code"></i> Prompt JSON</button>
+            <button onclick="app.switchView('editor')" id="nav-editor" class="active"><i class="fas fa-edit"></i> Editor RPS</button>
+            <button onclick="app.switchView('preview')" id="nav-preview"><i class="fas fa-file-alt"></i> Preview & Export</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- HALAMAN PENGATURAN API -->
+        <div id="settings-view" class="view-section">
+            <h2>Pengaturan Google Gemini</h2>
+            <p>Kelola API Key dan Model untuk generate konten RPS.</p>
+            
+            <div class="key-note">
+                <span>🔒</span>
+                <span>API Key disimpan di browser. Gunakan banyak key untuk mengatasi limit kuota. Sistem otomatis mencoba key berikutnya jika key pertama habis.</span>
+            </div>
+
+            <div class="form-group">
+                <label>Daftar API Key</label>
+                <div id="keys-container" class="key-list"></div>
+                <button class="btn-add" onclick="app.addKeyInput()">
+                    <i class="fas fa-plus"></i> Tambah API Key
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label>Pilih Model</label>
+                <select id="gemini-model" disabled>
+                    <option value="">Klik 'Tes Koneksi & Muat Model' dulu</option>
+                </select>
+            </div>
+
+            <div class="grid-2">
+                <button class="btn-test" onclick="app.fetchGeminiModels()">
+                    <span>🔄 Tes Koneksi & Muat Model</span>
+                </button>
+                <button class="btn-save" onclick="app.saveSettings()">
+                    <span>💾 Simpan Pengaturan</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB BARU: PROMPT JSON -->
+        <div id="prompt-view" class="view-section">
+            <h2>Konfigurasi Prompt (JSON)</h2>
+            <p>Ubah instruksi AI di sini untuk menghasilkan RPS yang lebih detail atau spesifik sesuai kebutuhan. Gunakan format JSON.</p>
+            
+            <div class="key-note">
+                <span>💡</span>
+                <span>Gunakan <b>placeholder</b> dalam JSON agar data dinamis. Contoh: <code>{mk_name}</code>, <code>{sks}</code>, <code>{cpl}</code>, <code>{cpmk}</code>.</span>
+            </div>
+
+            <h3>1. Prompt Generate CPMK</h3>
+            <div class="form-group">
+                <textarea id="prompt-cpmk" rows="12" spellcheck="false"></textarea>
+            </div>
+
+            <h3>2. Prompt Generate Sub-CPMK</h3>
+            <div class="form-group">
+                <textarea id="prompt-subcpmk" rows="12" spellcheck="false"></textarea>
+            </div>
+
+            <h3>3. Prompt Generate Uraian Mingguan</h3>
+            <div class="form-group">
+                <textarea id="prompt-weekly" rows="15" spellcheck="false"></textarea>
+            </div>
+
+            <div class="grid-2">
+                <button class="btn-danger btn" onclick="app.resetPrompts()">
+                    <i class="fas fa-undo"></i> Reset ke Default
+                </button>
+                <button class="btn-success btn" onclick="app.savePrompts()">
+                    <i class="fas fa-save"></i> Simpan Prompt JSON
+                </button>
+            </div>
+        </div>
+
+        <!-- HALAMAN EDITOR RPS -->
+        <div id="editor-view" class="view-section active">
+            
+            <h2>1. Identitas Mata Kuliah</h2>
+            <div class="grid-3">
+                <div class="form-group">
+                    <label>Mata Kuliah</label>
+                    <input type="text" id="mk-name" placeholder="Contoh: Metodologi Penelitian">
+                </div>
+                <div class="form-group">
+                    <label>Kode MK</label>
+                    <input type="text" id="mk-code" placeholder="Contoh: MKU001">
+                </div>
+                <div class="form-group">
+                    <label>Rumpun MK</label>
+                    <input type="text" id="mk-cluster">
+                </div>
+            </div>
+            <div class="grid-4">
+                <div class="form-group"><label>Semester</label><input type="text" id="mk-semester"></div>
+                <div class="form-group"><label>SKS</label><input type="number" id="mk-sks" value="3"></div>
+                <div class="form-group"><label>Jadwal</label><input type="text" id="mk-schedule"></div>
+                <div class="form-group"><label>Tgl Penyusunan</label><input type="date" id="mk-date"></div>
+            </div>
+            
+            <h3>Dosen</h3>
+            <div class="grid-2">
+                <div class="form-group"><label>Nama Dosen Pengampu</label><input type="text" id="dosen-name"></div>
+                <div class="form-group"><label>Nama Kaprodi</label><input type="text" id="kaprodi-name"></div>
+            </div>
+
+            <hr>
+
+            <h2>2. Capaian Pembelajaran (OBE) <span class="ai-badge">Gemini Ready</span></h2>
+            
+            <h3>CPL Prodi</h3>
+            <div class="form-group">
+                <textarea id="cpl-prodi" rows="3" placeholder="Masukkan CPL Prodi..."></textarea>
+            </div>
+
+            <h3>CPMK</h3>
+            <div id="cpmk-container"></div>
+            <button class="btn btn-outline" onclick="app.addCPMK()">+ Tambah CPMK</button>
+            <button id="btn-gen-cpmk" class="btn-ai" onclick="app.generateAI_CPMK()">
+                <i class="fas fa-magic"></i> Generate CPMK
+            </button>
+
+            <hr>
+
+            <h2>3. Sub-CPMK dan Matriks</h2>
+            <h3>Sub-CPMK (Maksimal 14)</h3>
+            <div id="sub-cpmk-container" class="grid-2"></div>
+            <button id="btn-gen-subcpmk" class="btn-ai" onclick="app.generateAI_SubCPMK()">
+                <i class="fas fa-magic"></i> Generate Sub-CPMK
+            </button>
+
+            <h3>Matriks Ketercapaian (CPMK vs Sub-CPMK)</h3>
+            <div class="table-container">
+                <table id="matrix-table"></table>
+            </div>
+
+            <hr>
+
+            <h2>4. Bahan Kajian & Pustaka</h2>
+            <div class="form-group">
+                <label>Deskripsi Mata Kuliah</label>
+                <textarea id="mk-description"></textarea>
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label>Pustaka Utama</label><textarea id="ref-main"></textarea></div>
+                <div class="form-group"><label>Pustaka Pendukung</label><textarea id="ref-support"></textarea></div>
+            </div>
+
+            <hr>
+
+            <h2>5. Uraian RPS Mingguan <span class="ai-badge">Gemini Ready</span></h2>
+            <p>Total Bobot Penilaian: <span id="total-weight" style="font-weight:bold;">0</span>% (Target: 100%)</p>
+            
+            <div class="table-container">
+                <table id="weekly-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">Mg</th>
+                            <th style="width: 20%;">Sub-CPMK</th>
+                            <th style="width: 20%;">Materi</th>
+                            <th>Metode</th>
+                            <th>Tugas</th>
+                            <th>Waktu</th>
+                            <th>Nilai & Bobot</th>
+                        </tr>
+                    </thead>
+                    <tbody id="weekly-tbody"></tbody>
+                </table>
+            </div>
+            <button id="btn-gen-weekly" class="btn-ai" onclick="app.generateAI_Weekly()">
+                <i class="fas fa-magic"></i> Generate Rencana Mingguan
+            </button>
+
+        </div>
+
+        <!-- HALAMAN PREVIEW -->
+        <div id="preview-view" class="view-section">
+            <div class="action-bar" style="position: static; margin-bottom: 20px; box-shadow: none; border-bottom: 1px solid #eee;">
+                <button class="btn btn-outline" onclick="app.switchView('editor')"><i class="fas fa-arrow-left"></i> Kembali ke Editor</button>
+                <button class="btn btn-primary" onclick="app.exportToPDF()"><i class="fas fa-file-pdf"></i> Export PDF</button>
+                <button class="btn btn-success" onclick="app.exportToDOCX()"><i class="fas fa-file-word"></i> Export DOCX</button>
+            </div>
+            
+            <div id="preview-content"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script>
+        const app = {
+            data: {
+                cpmk: [],
+                subCpmk: [],
+                matrix: {},
+                weeks: [],
+                keys: [],
+                prompts: {} // Menyimpan custom prompt JSON
+            },
+            totalWeeks: 16,
+            GEMINI_API_BASE: "https://generativelanguage.googleapis.com/v1beta/models/",
+
+            // --- DEFAULT PROMPTS (LEBIH DETAIL) ---
+            defaultPrompts: {
+                cpmk: JSON.stringify({
+                    "system": "Anda adalah Ahli Kurikulum Akademik Perguruan Tinggi di Indonesia. Anda memiliki keahlian dalam Kurikulum Berbasis Outcome (OBE) dan Taksonomi Bloom.",
+                    "user": "Tugas: Buatkan 3-5 Capaian Pembelajaran Mata Kuliah (CPMK) yang relevan.\n\nKonteks:\n- Mata Kuliah: {mk_name}\n- Bobot SKS: {sks}\n- CPL Prodi: {cpl}\n\nPersyaratan CPMK:\n1. Menggunakan Kata Kerja Operasional (KKO) Bloom tingkat C3-C6 (Menerapkan, Menganalisis, Menilai, Mencipta).\n2. Spesifik, Terukur, Dapat dicapai (SMART).\n3. Merujuk pada CPL Prodi yang diberikan.\n\nOutput Format (WAJIB JSON Array):\n[\"Mahasiswa mampu ...\", \"Mahasiswa mampu ...\"]"
+                }, null, 2),
+
+                subcpmk: JSON.stringify({
+                    "system": "Anda adalah Desainer Instruksional Pendidikan Tinggi. Tugas Anda memecah CPMK menjadi kompetensi mikro.",
+                    "user": "Tugas: Buatkan 14 Sub-CPMK (Kemampuan Akhir Tahapan Belajar).\n\nKonteks:\n- Mata Kuliah: {mk_name}\n- Daftar CPMK:\n{cpmk}\n\nInstruksi:\n1. Buatkan 14 Sub-CPMK yang mengalir logis dari minggu ke-1 hingga ke-14.\n2. Setiap Sub-CPMK harus mendukung salah satu CPMK di atas.\n3. Gunakan bahasa yang jelas dan aksi.\n\nOutput Format (WAJIB JSON Array):\n[\"Sub-CPMK 1: ...\", \"Sub-CPMK 2: ...\", ...]"
+                }, null, 2),
+
+                weekly: JSON.stringify({
+                    "system": "Anda adalah Ahli Strategi Pembelajaran. Buatkan rencana perjalanan belajar (Learning Journey) selama satu semester.",
+                    "user": "Tugas: Susun Uraian RPS Mingguan (Week 1-16).\n\nKonteks:\n- Mata Kuliah: {mk_name}\n- Sub-CPMK: {subcpmk}\n\nInstruksi Kolom:\n1. 'topic': Materi inti yang sesuai Sub-CPMK.\n2. 'methodL': Bentuk Pembelajaran Luring (Kuliah, Diskusi, Praktikum).\n3. 'methodD': Metode Pembelajaran Daring (LMS, Quiz, Forum).\n4. 'task': Tugas spesifik mahasiswa minggu itu.\n5. 'time': Estimasi waktu (misal: 3x50 menit).\n6. 'assess': Indikator penilaian spesifik.\n7. 'weight': Bobot persentase penilaian.\n\nPENTING: Total 'weight' dari minggu 1-16 harus bernilai 100.\n\nOutput Format (WAJIB JSON Array Lengkap):\n[{\"week\":1, \"topic\":\"...\", \"methodL\":\"...\", \"methodD\":\"...\", \"task\":\"...\", \"time\":\"...\", \"assess\":\"...\", \"weight\":4}, ... sampai minggu 16]"
+                }, null, 2)
+            },
+
+            init: function() {
+                this.loadSettings();
+                this.loadPrompts(); // Load prompt JSON
+                
+                if(this.data.keys.length === 0) this.addKeyInput();
+                
+                for(let i=0; i<3; i++) this.addCPMK();
+                for(let i=0; i<14; i++) this.addSubCPMK();
+                
+                this.renderMatrix();
+                this.renderWeekly();
+            },
+
+            switchView: function(viewName) {
+                try {
+                    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                    document.querySelectorAll('.nav-links button').forEach(el => el.classList.remove('active'));
+                    
+                    document.getElementById(viewName + '-view').classList.add('active');
+                    document.getElementById('nav-' + viewName).classList.add('active');
+
+                    if (viewName === 'prompt') {
+                        this.renderPromptInputs(); // Load current prompts to textareas
+                    }
+                    if (viewName === 'preview') {
+                        this.scrapeAllCurrentInputs();
+                        this.renderPreview();
+                    }
+                } catch (e) {
+                    console.error("Switch View Error:", e);
+                    alert("Terjadi error saat pindah halaman: " + e.message);
+                }
+            },
+
+            // --- PROMPT LOGIC ---
+            loadPrompts: function() {
+                const stored = localStorage.getItem('udw_rps_prompts');
+                if(stored) {
+                    this.data.prompts = JSON.parse(stored);
+                } else {
+                    this.data.prompts = JSON.parse(JSON.stringify(this.defaultPrompts));
+                }
+            },
+
+            renderPromptInputs: function() {
+                document.getElementById('prompt-cpmk').value = this.data.prompts.cpmk;
+                document.getElementById('prompt-subcpmk').value = this.data.prompts.subcpmk;
+                document.getElementById('prompt-weekly').value = this.data.prompts.weekly;
+            },
+
+            savePrompts: function() {
+                try {
+                    // Validate JSON
+                    const cpmkRaw = document.getElementById('prompt-cpmk').value;
+                    const subRaw = document.getElementById('prompt-subcpmk').value;
+                    const weeklyRaw = document.getElementById('prompt-weekly').value;
+
+                    // Check if valid JSON
+                    JSON.parse(cpmkRaw);
+                    JSON.parse(subRaw);
+                    JSON.parse(weeklyRaw);
+
+                    this.data.prompts.cpmk = cpmkRaw;
+                    this.data.prompts.subcpmk = subRaw;
+                    this.data.prompts.weekly = weeklyRaw;
+
+                    localStorage.setItem('udw_rps_prompts', JSON.stringify(this.data.prompts));
+                    this.showToast('Prompt JSON berhasil disimpan!', 'success');
+                } catch (e) {
+                    alert("Format JSON salah! Silakan periksa kembali tanda kurung atau kutip.");
+                }
+            },
+
+            resetPrompts: function() {
+                if(confirm("Apakah Anda yakin ingin mengembalikan prompt ke bawaan?")) {
+                    this.data.prompts = JSON.parse(JSON.stringify(this.defaultPrompts));
+                    this.renderPromptInputs();
+                    this.showToast('Prompt direset ke default.', 'info');
+                }
+            },
+
+            getProcessedPrompt: function(type, context) {
+                try {
+                    let raw = this.data.prompts[type];
+                    let promptObj = JSON.parse(raw);
+                    
+                    let userText = promptObj.user;
+                    // Replace placeholders
+                    userText = userText.replace(/{mk_name}/g, context.mk_name || "");
+                    userText = userText.replace(/{sks}/g, context.sks || "");
+                    userText = userText.replace(/{cpl}/g, context.cpl || "");
+                    userText = userText.replace(/{cpmk}/g, context.cpmk || "");
+                    userText = userText.replace(/{subcpmk}/g, context.subcpmk || "");
+
+                    return {
+                        system: promptObj.system,
+                        user: userText
+                    };
+                } catch(e) {
+                    console.error("Prompt Parse Error", e);
+                    // Fallback to defaults if custom prompt is broken
+                    return {
+                        system: "Anda adalah ahli.",
+                        user: "Buatkan konten untuk " + (context.mk_name || "mata kuliah")
+                    };
+                }
+            },
+
+            // --- SYNC FUNCTION ---
+            scrapeAllCurrentInputs: function() {
+                for(let i=1; i<=this.totalWeeks; i++) {
+                    const row = document.getElementById(`week-row-${i}`);
+                    if(row) {
+                        if(!this.data.weeks[i]) this.data.weeks[i] = {};
+                        this.data.weeks[i].topic = row.querySelector('.week-topic').value;
+                        this.data.weeks[i].methodL = row.querySelector('.week-method-l').value;
+                        this.data.weeks[i].methodD = row.querySelector('.week-method-d').value;
+                        this.data.weeks[i].task = row.querySelector('.week-task').value;
+                        this.data.weeks[i].time = row.querySelector('.week-time').value;
+                        this.data.weeks[i].assess = row.querySelector('.week-assess').value;
+                        this.data.weeks[i].weight = row.querySelector('.week-weight').value;
+                        this.data.weeks[i].subcpmk = row.querySelector('.week-subcpmk').value;
+                    }
+                }
+                this.calculateTotalWeight();
+            },
+
+            // --- API SETTINGS ---
+            addKeyInput: function(value = '') {
+                const container = document.getElementById('keys-container');
+                const div = document.createElement('div');
+                div.className = 'key-item';
+                div.innerHTML = `
+                    <input type="password" class="gemini-key-input" placeholder="AIza..." value="${value}">
+                    <button class="btn-remove-key" onclick="this.parentElement.remove()" title="Hapus Key">&times;</button>
+                `;
+                container.appendChild(div);
+            },
+
+            loadSettings: function() {
+                const savedKeys = localStorage.getItem('udw_rps_gemini_keys');
+                if (savedKeys) this.data.keys = JSON.parse(savedKeys);
+                
+                const container = document.getElementById('keys-container');
+                container.innerHTML = ''; 
+                this.data.keys.forEach(key => this.addKeyInput(key));
+                if (this.data.keys.length === 0) this.addKeyInput();
+
+                const savedModel = localStorage.getItem('udw_rps_gemini_model');
+                if (savedModel) {
+                    const geminiSelect = document.getElementById('gemini-model');
+                    geminiSelect.innerHTML = '';
+                    const opt = document.createElement('option');
+                    opt.value = savedModel;
+                    opt.text = savedModel + " (Tersimpan)";
+                    opt.selected = true;
+                    geminiSelect.add(opt);
+                    geminiSelect.disabled = false;
+                }
+            },
+
+            saveSettings: function() {
+                const inputs = document.querySelectorAll('.gemini-key-input');
+                let keys = [];
+                inputs.forEach(input => {
+                    if (input.value.trim() !== '') keys.push(input.value.trim());
+                });
+
+                const model = document.getElementById('gemini-model').value;
+                if (keys.length === 0) { this.showToast('Mohon masukkan setidaknya satu API Key', 'error'); return; }
+
+                localStorage.setItem('udw_rps_gemini_keys', JSON.stringify(keys));
+                localStorage.setItem('udw_rps_gemini_model', model);
+                this.data.keys = keys;
+
+                this.showToast('Pengaturan API berhasil disimpan', 'success');
+            },
+
+            fetchGeminiModels: async function() {
+                this.saveSettings();
+                const keys = this.data.keys;
+                if (keys.length === 0) { this.showToast('Mohon isi API Key', 'error'); return; }
+
+                const btn = document.querySelector('.btn-test');
+                const select = document.getElementById('gemini-model');
+                const apiKey = keys[0];
+
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<div class="spinner"></div> Memuat...`;
+                btn.disabled = true;
+                select.innerHTML = '<option>Memuat model...</option>';
+                select.disabled = true;
+
+                try {
+                    let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                    let data = await res.json();
+
+                    if (res.ok && data.models) {
+                        select.innerHTML = '';
+                        let chatModels = data.models.filter(m => m.name.includes('gemini') && m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'));
+
+                        if (chatModels.length === 0) {
+                            this.showToast('Tidak ada model ditemukan', 'error');
+                            select.add(new Option("Tidak ada model", ""));
+                        } else {
+                            chatModels.forEach(m => {
+                                let id = m.name.split('/')[1];
+                                let opt = document.createElement('option');
+                                opt.value = id;
+                                opt.text = `${m.displayName} (${id})`;
+                                if(id.includes('flash')) opt.selected = true;
+                                select.add(opt);
+                            });
+                            select.disabled = false;
+                            this.showToast(`Berhasil! ${chatModels.length} model ditemukan.`, 'success');
+                        }
+                    } else {
+                        this.showToast('Gagal: ' + (data.error?.message || 'API Error'), 'error');
+                        select.innerHTML = '<option>Gagal memuat model</option>';
+                    }
+                } catch (error) {
+                    this.showToast('Error Jaringan', 'error');
+                    select.innerHTML = '<option>Error koneksi</option>';
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            },
+
+            showToast: function(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `<span>${message}</span> <span style="cursor:pointer" onclick="this.parentElement.remove()">&times;</span>`;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            },
+
+            callAI: async function(systemPrompt, userPrompt) {
+                const model = localStorage.getItem('udw_rps_gemini_model');
+                if(!model) throw new Error("Pilih Model di Pengaturan.");
+                const activeKeys = this.data.keys.filter(k => k.trim() !== "");
+                if(activeKeys.length === 0) throw new Error("Tidak ada API Key.");
+
+                let lastError = null;
+                for (const key of activeKeys) {
+                    try {
+                        const url = `${this.GEMINI_API_BASE}${model}:generateContent?key=${key}`;
+                        const payload = {
+                            contents: [{ parts: [{ text: userPrompt }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                            generationConfig: { temperature: 0.7, responseMimeType: "text/plain" }
+                        };
+
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await response.json();
+                        if(data.error) throw new Error(data.error.message);
+                        
+                        if(data.candidates && data.candidates[0] && data.candidates[0].content) {
+                            return data.candidates[0].content.parts[0].text;
+                        } else {
+                            throw new Error("Format respon tidak dikenali");
+                        }
+
+                    } catch (e) {
+                        lastError = e;
+                        continue;
+                    }
+                }
+                throw new Error("Semua API Key gagal: " + lastError.message);
+            },
+
+            // --- FORM LOGIC ---
+            addCPMK: function() {
+                const id = this.data.cpmk.length;
+                this.data.cpmk.push("");
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.style.border = "1px solid #eee"; div.style.padding = "10px";
+                div.innerHTML = `<label>CPMK ${id + 1}</label><textarea class="cpmk-input" data-idx="${id}" oninput="app.updateCPMK(${id}, this.value)"></textarea><button style="color:red; background:none; border:none; cursor:pointer;" onclick="app.removeCPMK(${id}, this)">Hapus</button>`;
+                document.getElementById('cpmk-container').appendChild(div);
+                this.renderMatrix();
+            },
+            removeCPMK: function(idx, btnElement) {
+                if(this.data.cpmk.length <= 1) return alert("Minimal 1 CPMK");
+                this.data.cpmk.splice(idx, 1);
+                btnElement.parentElement.remove();
+                const container = document.getElementById('cpmk-container'); container.innerHTML = '';
+                this.data.cpmk.forEach((val, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    div.style.border = "1px solid #eee"; div.style.padding = "10px";
+                    div.innerHTML = `<label>CPMK ${i + 1}</label><textarea class="cpmk-input" data-idx="${i}" oninput="app.updateCPMK(${i}, this.value)">${val}</textarea><button style="color:red; background:none; border:none; cursor:pointer;" onclick="app.removeCPMK(${i}, this)">Hapus</button>`;
+                    container.appendChild(div);
+                });
+                this.renderMatrix();
+            },
+            updateCPMK: function(idx, val) { this.data.cpmk[idx] = val; },
+
+            addSubCPMK: function() {
+                const id = this.data.subCpmk.length; if(id >= 14) return;
+                this.data.subCpmk.push("");
+                const div = document.createElement('div');
+                div.className = 'form-group'; div.style.background = "#f9f9f9"; div.style.padding = "10px";
+                div.innerHTML = `<label>Sub-CPMK ${id + 1}</label><textarea class="subcpmk-input" data-idx="${id}" oninput="app.updateSubCPMK(${id}, this.value)"></textarea>`;
+                document.getElementById('sub-cpmk-container').appendChild(div);
+                this.renderMatrix();
+            },
+            updateSubCPMK: function(idx, val) { this.data.subCpmk[idx] = val; },
+
+            renderMatrix: function() {
+                const table = document.getElementById('matrix-table');
+                let html = '<thead><tr><th>CPMK \\ Sub</th>';
+                this.data.subCpmk.forEach((_, i) => html += `<th style="font-size:0.7rem;">S${i+1}</th>`);
+                html += '</tr></thead><tbody>';
+                this.data.cpmk.forEach((_, cIdx) => {
+                    html += `<tr><td><b>CPMK ${cIdx+1}</b></td>`;
+                    this.data.subCpmk.forEach((_, sIdx) => {
+                        const key = `${cIdx}-${sIdx}`;
+                        const checked = this.data.matrix[key] ? 'checked' : '';
+                        html += `<td class="matrix-cell"><input type="checkbox" onchange="app.toggleMatrix('${key}', this)" ${checked}></td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody>'; table.innerHTML = html;
+            },
+            toggleMatrix: function(key, checkbox) { this.data.matrix[key] = checkbox.checked; },
+
+            renderWeekly: function() {
+                const tbody = document.getElementById('weekly-tbody');
+                let html = '';
+                for(let i=1; i<=this.totalWeeks; i++) {
+                    html += `
+                    <tr id="week-row-${i}">
+                        <td style="text-align:center;">${i}</td>
+                        <td>
+                            <select class="week-subcpmk" onchange="app.updateWeekData(${i}, 'subcpmk', this.value)">
+                                <option value="">Pilih Sub-CPMK</option>
+                                ${this.data.subCpmk.map((_, idx) => `<option value="${idx}">Sub-CPMK ${idx+1}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td><input type="text" class="week-topic" onchange="app.updateWeekData(${i}, 'topic', this.value)"></td>
+                        <td>
+                            <input type="text" class="week-method-l" placeholder="Luring" style="margin-bottom:5px;" onchange="app.updateWeekData(${i}, 'methodL', this.value)">
+                            <input type="text" class="week-method-d" placeholder="Daring" onchange="app.updateWeekData(${i}, 'methodD', this.value)">
+                        </td>
+                        <td><input type="text" class="week-task" onchange="app.updateWeekData(${i}, 'task', this.value)"></td>
+                        <td><input type="text" class="week-time" onchange="app.updateWeekData(${i}, 'time', this.value)"></td>
+                        <td>
+                            <input type="text" class="week-assess" placeholder="Kriteria" onchange="app.updateWeekData(${i}, 'assess', this.value)">
+                            <input type="number" class="week-weight" placeholder="%" style="width:60px; margin-top:5px;" onchange="app.updateWeekData(${i}, 'weight', this.value)">
+                        </td>
+                    </tr>
+                    `;
+                }
+                tbody.innerHTML = html;
+            },
+            updateWeekData: function(week, field, value) {
+                if(!this.data.weeks[week]) this.data.weeks[week] = {};
+                this.data.weeks[week][field] = value;
+                if(field === 'weight') this.calculateTotalWeight();
+            },
+            calculateTotalWeight: function() {
+                let total = 0;
+                for(let i=1; i<=this.totalWeeks; i++) {
+                    if(this.data.weeks[i] && this.data.weeks[i].weight) {
+                        total += parseFloat(this.data.weeks[i].weight);
+                    }
+                }
+                const el = document.getElementById('total-weight');
+                el.innerText = total;
+                el.style.color = total === 100 ? 'green' : 'red';
+                if(total !== 100) el.innerText += " (Harus 100%)";
+            },
+
+            // --- AI GENERATORS (MENGGUNAKAN CUSTOM PROMPT) ---
+            generateAI_CPMK: async function() {
+                const mkName = document.getElementById('mk-name').value;
+                const cplProdi = document.getElementById('cpl-prodi').value;
+                const sks = document.getElementById('mk-sks').value;
+                if(!mkName) return alert("Nama Mata Kuliah wajib diisi dulu.");
+
+                const btn = document.getElementById('btn-gen-cpmk');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<div class="spinner"></div> Generating...`;
+                btn.disabled = true;
+
+                try {
+                    // Ambil prompt dari Tab Prompt JSON
+                    const promptObj = this.getProcessedPrompt('cpmk', {
+                        mk_name: mkName,
+                        sks: sks,
+                        cpl: cplProdi
+                    });
+
+                    const content = await this.callAI(promptObj.system, promptObj.user);
+                    const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const cpmks = JSON.parse(jsonStr);
+                    
+                    const container = document.getElementById('cpmk-container');
+                    container.innerHTML = '';
+                    this.data.cpmk = [];
+                    
+                    cpmks.forEach(text => {
+                        this.data.cpmk.push(text);
+                        const idx = this.data.cpmk.length - 1;
+                        const div = document.createElement('div');
+                        div.className = 'form-group';
+                        div.style.border = "1px solid #eee"; div.style.padding = "10px";
+                        div.innerHTML = `<label>CPMK ${idx + 1}</label><textarea class="cpmk-input" data-idx="${idx}" oninput="app.updateCPMK(${idx}, this.value)">${text}</textarea><button style="color:red; background:none; border:none; cursor:pointer;" onclick="app.removeCPMK(${idx}, this)">Hapus</button>`;
+                        container.appendChild(div);
+                    });
+                    this.renderMatrix();
+                    alert("CPMK berhasil dibuat!");
+                } catch (e) { alert("Error: " + e.message); } 
+                finally { btn.innerHTML = originalText; btn.disabled = false; }
+            },
+
+            generateAI_SubCPMK: async function() {
+                const mkName = document.getElementById('mk-name').value;
+                const cpmkList = this.data.cpmk.join("\n");
+                if(!mkName || this.data.cpmk.length === 0) return alert("Isi Nama MK dan CPMK dulu.");
+
+                const btn = document.getElementById('btn-gen-subcpmk');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<div class="spinner"></div> Generating...`;
+                btn.disabled = true;
+
+                try {
+                    const promptObj = this.getProcessedPrompt('subcpmk', {
+                        mk_name: mkName,
+                        cpmk: cpmkList
+                    });
+
+                    const content = await this.callAI(promptObj.system, promptObj.user);
+                    const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const subs = JSON.parse(jsonStr);
+                    
+                    const container = document.getElementById('sub-cpmk-container');
+                    container.innerHTML = '';
+                    this.data.subCpmk = [];
+                    
+                    subs.forEach((text, i) => {
+                        if(i >= 14) return;
+                        this.data.subCpmk.push(text);
+                        const div = document.createElement('div');
+                        div.className = 'form-group'; div.style.background = "#f9f9f9"; div.style.padding = "10px";
+                        div.innerHTML = `<label>Sub-CPMK ${i + 1}</label><textarea class="subcpmk-input" data-idx="${i}" oninput="app.updateSubCPMK(${i}, this.value)">${text}</textarea>`;
+                        container.appendChild(div);
+                    });
+                    this.renderMatrix();
+                    this.renderWeekly();
+                    alert("Sub-CPMK berhasil dibuat!");
+                } catch (e) { alert("Error: " + e.message); } 
+                finally { btn.innerHTML = originalText; btn.disabled = false; }
+            },
+
+            generateAI_Weekly: async function() {
+                const mkName = document.getElementById('mk-name').value;
+                const subCpmkText = this.data.subCpmk.map((s, i) => `${i+1}. ${s}`).join('\n');
+                if(!subCpmkText) return alert("Generate Sub-CPMK dulu.");
+
+                const btn = document.getElementById('btn-gen-weekly');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<div class="spinner"></div> Generating...`;
+                btn.disabled = true;
+
+                try {
+                    const promptObj = this.getProcessedPrompt('weekly', {
+                        mk_name: mkName,
+                        subcpmk: subCpmkText
+                    });
+
+                    const content = await this.callAI(promptObj.system, promptObj.user);
+                    let jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                    if(!jsonStr.startsWith('[')) throw new Error("Format JSON tidak valid");
+
+                    const weeksData = JSON.parse(jsonStr);
+                    
+                    weeksData.forEach(w => {
+                        const row = document.getElementById(`week-row-${w.week}`);
+                        if(row) {
+                            row.querySelector('.week-topic').value = w.topic || "";
+                            row.querySelector('.week-method-l').value = w.methodL || "";
+                            row.querySelector('.week-method-d').value = w.methodD || "";
+                            row.querySelector('.week-task').value = w.task || "";
+                            row.querySelector('.week-time').value = w.time || "";
+                            row.querySelector('.week-assess').value = w.assess || "";
+                            
+                            const weightInput = row.querySelector('.week-weight');
+                            weightInput.value = w.weight || 0;
+                            
+                            if(!this.data.weeks[w.week]) this.data.weeks[w.week] = {};
+                            this.data.weeks[w.week].topic = w.topic || "";
+                            this.data.weeks[w.week].methodL = w.methodL || "";
+                            this.data.weeks[w.week].methodD = w.methodD || "";
+                            this.data.weeks[w.week].task = w.task || "";
+                            this.data.weeks[w.week].time = w.time || "";
+                            this.data.weeks[w.week].assess = w.assess || "";
+                            this.data.weeks[w.week].weight = w.weight || 0;
+                            
+                            this.calculateTotalWeight();
+                            
+                            if(w.week <= 14) {
+                                row.querySelector('.week-subcpmk').value = w.week - 1;
+                                this.data.weeks[w.week].subcpmk = w.week - 1;
+                            }
+                        }
+                    });
+                    alert("Rencana Mingguan berhasil di-generate! Silakan cek di Editor.");
+                } catch (e) { alert("Error: " + e.message); } 
+                finally { btn.innerHTML = originalText; btn.disabled = false; }
+            },
+
+            renderPreview: function() {
+                const container = document.getElementById('preview-content');
+                const totalWeight = document.getElementById('total-weight').innerText;
+                const val = (id) => document.getElementById(id)?.value || "........................................";
+                const getSubCPMK = (idx) => this.data.subCpmk[idx] || "";
+
+                let html = `
+                    <div style="text-align:center; margin-bottom: 20px;">
+                        <h2>UNIVERSITAS DHARMA WACANA</h2>
+                        <p>FAKULTAS ....................................................... JURUSAN .............................................</p>
+                        <p>PROGRAM STUDI ..............................................................</p>
+                        <hr>
+                        <h3>RENCANA PEMBELAJARAN SEMESTER (RPS)</h3>
+                    </div>
+                    <table style="width:100%; margin-bottom:20px; border:none;">
+                        <tr><td style="border:none; width:20%;">MATA KULIAH</td><td style="border:none;">: ${val('mk-name')}</td><td style="border:none;">JADWAL</td><td style="border:none;">: ${val('mk-schedule')}</td></tr>
+                        <tr><td style="border:none;">KODE MK</td><td style="border:none;">: ${val('mk-code')}</td><td style="border:none;">BOBOT (sks)</td><td style="border:none;">: ${val('mk-sks')}</td></tr>
+                        <tr><td style="border:none;">Rumpun MK</td><td style="border:none;">: ${val('mk-cluster')}</td><td style="border:none;">TGL PENYUSUNAN</td><td style="border:none;">: ${val('mk-date')}</td></tr>
+                        <tr><td style="border:none;">SEMESTER</td><td style="border:none;">: ${val('mk-semester')}</td><td style="border:none;"></td><td style="border:none;"></td></tr>
+                    </table>
+                    <h4>1. CAPAIAN PEMBELAJARAN</h4>
+                    <p><b>CPL Prodi:</b><br>${document.getElementById('cpl-prodi').value.replace(/\n/g, '<br>')}</p>
+                    <p><b>CPMK:</b></p>
+                    <ul>${this.data.cpmk.map((c, i) => `<li>${c}</li>`).join('')}</ul>
+                    <h4>2. Matriks Ketercapaian</h4>
+                    <table style="width:100%; font-size:0.8rem;">
+                        <tr><th>CPMK \\ Sub</th>${this.data.subCpmk.map((_,i)=>`<th>S${i+1}</th>`).join('')}</tr>
+                        ${this.data.cpmk.map((_, cIdx) => `
+                            <tr>
+                                <td>CPMK ${cIdx+1}</td>
+                                ${this.data.subCpmk.map((_, sIdx) => {
+                                    const key = `${cIdx}-${sIdx}`;
+                                    return `<td style="text-align:center;">${this.data.matrix[key] ? 'X' : ''}</td>`;
+                                }).join('')}
+                            </tr>
+                        `).join('')}
+                    </table>
+                    <h4>3. Uraian RPS</h4>
+                    <table style="width:100%; font-size:0.8rem; border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th style="border:1px solid #000;">Mg Ke-</th>
+                                <th style="border:1px solid #000;">Sub-CPMK</th>
+                                <th style="border:1px solid #000;">Materi</th>
+                                <th style="border:1px solid #000;">Metode</th>
+                                <th style="border:1px solid #000;">Tugas</th>
+                                <th style="border:1px solid #000;">Waktu</th>
+                                <th style="border:1px solid #000;">Nilai</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Array.from({length: 16}, (_, i) => i+1).map(week => {
+                                const data = this.data.weeks[week] || {};
+                                return `
+                                <tr>
+                                    <td style="border:1px solid #000; text-align:center;">${week}</td>
+                                    <td style="border:1px solid #000;">${data.subcpmk !== undefined ? getSubCPMK(data.subcpmk) : ''}</td>
+                                    <td style="border:1px solid #000;">${data.topic || ''}</td>
+                                    <td style="border:1px solid #000;">L: ${data.methodL || ''}<br>D: ${data.methodD || ''}</td>
+                                    <td style="border:1px solid #000;">${data.task || ''}</td>
+                                    <td style="border:1px solid #000;">${data.time || ''}</td>
+                                    <td style="border:1px solid #000;">
+                                        <small>${data.assess || ''}</small><br>
+                                        <b>${data.weight || 0}%</b>
+                                    </td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    <div style="margin-top:20px;">
+                        <b>Pustaka Utama:</b><br>${document.getElementById('ref-main').value.replace(/\n/g, '<br>')}
+                        <br><br><b>Pustaka Pendukung:</b><br>${document.getElementById('ref-support').value.replace(/\n/g, '<br>')}
+                    </div>
+                    <div class="signature-box">
+                        <div class="sign-col">
+                            <p>Mengetahui,<br>Kaprodi</p>
+                            <div class="sign-space"></div>
+                            <p><b>${val('kaprodi-name')}</b></p>
+                        </div>
+                        <div class="sign-col">
+                            <p>Dosen Pengampu</p>
+                            <div class="sign-space"></div>
+                            <p><b>${val('dosen-name')}</b></p>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = html;
+            },
+            exportToPDF: function() {
+                const element = document.getElementById('preview-content');
+                const opt = {
+                    margin: 0.5,
+                    filename: 'RPS_UDW.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(element).save();
+            },
+            exportToDOCX: function() {
+                const content = document.getElementById('preview-content').innerHTML;
+                try {
+                    const converted = htmlDocx.asBlob(content);
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(converted);
+                    link.download = 'RPS_UDW.docx';
+                    link.click();
+                } catch (e) {
+                    alert("Gagal export DOCX. Silakan gunakan PDF.");
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>
